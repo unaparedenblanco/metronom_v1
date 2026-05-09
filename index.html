@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METRÒNOM - App Musical</title>
+    <style>
+        /* Definició de variables de colors */
+        :root {
+            --bg-color: #0f172a;
+            --container-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --accent-beat: #ef4444; /* Color per al primer temps */
+            --normal-beat: #10b981; /* Color per a la resta de temps */
+            --shadow: rgba(0, 0, 0, 0.4);
+            --border-color: #334155;
+        }
+
+        /* Classe per al mode clar */
+        .light-mode {
+            --bg-color: #f1f5f9;
+            --container-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-secondary: #64748b;
+            --accent-color: #2563eb;
+            --accent-hover: #1d4ed8;
+            --shadow: rgba(0, 0, 0, 0.08);
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            transition: background-color 0.3s ease;
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        /* Botó de canvi de mode */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background: var(--container-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            cursor: pointer;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 6px var(--shadow);
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        .container {
+            text-align: center;
+            background: var(--container-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px var(--shadow), 0 0 0 1px var(--border-color);
+            width: 90%;
+            max-width: 450px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        h1 {
+            color: var(--text-main);
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        #tempoNom {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            height: 1.5rem;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Visualitzador del compàs */
+        .beats-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            height: 20px;
+        }
+
+        .beat-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            transition: background-color 0.1s ease, transform 0.1s ease;
+        }
+
+        .beat-dot.active-strong {
+            background-color: var(--accent-beat);
+            transform: scale(1.3);
+            box-shadow: 0 0 10px var(--accent-beat);
+        }
+
+        .beat-dot.active-weak {
+            background-color: var(--normal-beat);
+            transform: scale(1.3);
+            box-shadow: 0 0 10px var(--normal-beat);
+        }
+
+        /* Controls de BPM */
+        .bpm-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .bpm-btn {
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .bpm-btn:hover {
+            background: var(--border-color);
+        }
+
+        .bpm-btn:active {
+            transform: scale(0.9);
+        }
+
+        .valor-display-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .valor-display {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--text-main);
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            text-align: center;
+            width: 130px;
+            outline: none;
+            font-family: inherit;
+            transition: border-bottom-color 0.3s;
+            -moz-appearance: textfield;
+        }
+        
+        .valor-display::-webkit-outer-spin-button,
+        .valor-display::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .valor-display:focus {
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .unitat {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        /* Slider personalitzat */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 5px;
+            outline: none;
+            margin: 25px 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            box-shadow: 0 2px 6px var(--shadow);
+            transition: transform 0.1s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        /* Selector de compàs */
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            background: rgba(0,0,0,0.1);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .light-mode .controls-row {
+            background: rgba(0,0,0,0.03);
+        }
+
+        select {
+            background: var(--container-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* Botons principals */
+        .actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        button#playBtn {
+            flex: 1;
+            padding: 16px 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        button#playBtn:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        button#playBtn.actiu {
+            background-color: var(--accent-beat) !important;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Crèdit */
+        footer {
+            margin-top: 30px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        footer strong {
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+
+    <button class="theme-toggle" id="themeBtn" title="Canviar mode">🌓</button>
+
+    <div class="container">
+        <h1>METRÒNOM</h1>
+        <span id="tempoNom">Allegro</span>
+
+        <div class="beats-container" id="beatsContainer">
+            <!-- Punts generats per JS -->
+        </div>
+        
+        <div class="bpm-controls">
+            <button class="bpm-btn" id="btnMinus" aria-label="Menys">-</button>
+            <div class="valor-display-container">
+                <input type="number" id="bbpValor" class="valor-display" value="120" min="20" max="228" step="1">
+                <span class="unitat">BPM</span>
+            </div>
+            <button class="bpm-btn" id="btnPlus" aria-label="Més">+</button>
+        </div>
+
+        <input type="range" id="bbpSlider" min="20" max="228" value="120">
+        
+        <div class="controls-row">
+            <label for="timeSignature">Compàs:</label>
+            <select id="timeSignature">
+                <option value="1">1/4</option>
+                <option value="2">2/4</option>
+                <option value="3">3/4</option>
+                <option value="4" selected>4/4</option>
+                <option value="5">5/4</option>
+                <option value="6">6/8</option>
+            </select>
+        </div>
+
+        <div class="actions">
+            <button id="playBtn">INICIAR</button>
+        </div>
+    </div>
+
+    <footer>
+        App dissenyada per <strong>Miguel Castellá Viciano</strong>
+    </footer>
+
+    <script>
+        /**
+         * Lògica del Metrònom
+         * Aquest script utilitza la Web Audio API per a una precisió rítmica perfecta.
+         */
+
+        const slider = document.getElementById('bbpSlider');
+        const output = document.getElementById('bbpValor');
+        const tempoNom = document.getElementById('tempoNom');
+        const playBtn = document.getElementById('playBtn');
+        const themeBtn = document.getElementById('themeBtn');
+        const btnMinus = document.getElementById('btnMinus');
+        const btnPlus = document.getElementById('btnPlus');
+        const timeSignatureSelect = document.getElementById('timeSignature');
+        const beatsContainer = document.getElementById('beatsContainer');
+
+        let audioCtx = null;
+        let isPlaying = false;
+        let nextNoteTime = 0.0;
+        let timerID = null;
+        let bpm = 120;
+        let beatsPerMeasure = 4;
+        let currentBeat = 0;
+
+        // Gestió de Temes
+        themeBtn.onclick = () => document.body.classList.toggle('light-mode');
+
+        // Nomenclatura musical italiana
+        function getTempoNom(bpmValue) {
+            const b = parseInt(bpmValue);
+            if (b < 40) return "Grave";
+            if (b < 60) return "Largo";
+            if (b < 66) return "Lento";
+            if (b < 76) return "Adagio";
+            if (b < 108) return "Andante";
+            if (b < 120) return "Moderato";
+            if (b < 168) return "Allegro";
+            if (b < 208) return "Vivace";
+            return "Prestissimo";
+        }
+
+        // Dibuixar punts del compàs
+        function renderBeats() {
+            beatsContainer.innerHTML = '';
+            for (let i = 0; i < beatsPerMeasure; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'beat-dot';
+                dot.id = `beat-${i}`;
+                beatsContainer.appendChild(dot);
+            }
+        }
+
+        // Feedback visual del pols
+        function highlightBeat(beatNumber, time) {
+            const secondsToWait = time - audioCtx.currentTime;
+            setTimeout(() => {
+                document.querySelectorAll('.beat-dot').forEach(el => el.classList.remove('active-strong', 'active-weak'));
+                const currentDot = document.getElementById(`beat-${beatNumber}`);
+                if (currentDot) {
+                    currentDot.classList.add(beatNumber === 0 ? 'active-strong' : 'active-weak');
+                }
+            }, Math.max(0, secondsToWait * 1000));
+        }
+
+        // So de clic
+        function playClick(time, isStrong) {
+            const osc = audioCtx.createOscillator();
+            const envelope = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(isStrong ? 1200 : 800, time);
+            
+            envelope.gain.setValueAtTime(isStrong ? 0.8 : 0.5, time);
+            envelope.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+
+            osc.connect(envelope);
+            envelope.connect(audioCtx.destination);
+
+            osc.start(time);
+            osc.stop(time + 0.1);
+        }
+
+        // Bucle de planificació de notes
+        function scheduler() {
+            while (nextNoteTime < audioCtx.currentTime + 0.1) {
+                playClick(nextNoteTime, currentBeat === 0);
+                highlightBeat(currentBeat, nextNoteTime);
+                
+                nextNoteTime += 60.0 / bpm;
+                currentBeat = (currentBeat + 1) % beatsPerMeasure;
+            }
+            timerID = setTimeout(scheduler, 25);
+        }
+
+        // Actualització global de BPM
+        function updateBPM(val) {
+            let n = parseInt(val);
+            if (isNaN(n)) return;
+            n = Math.min(Math.max(n, 20), 228);
+            
+            bpm = n;
+            slider.value = n;
+            output.value = n;
+            tempoNom.innerText = getTempoNom(n);
+        }
+
+        // Listeners
+        slider.oninput = (e) => updateBPM(e.target.value);
+        btnMinus.onclick = () => updateBPM(bpm - 1);
+        btnPlus.onclick = () => updateBPM(bpm + 1);
+        output.onchange = (e) => updateBPM(e.target.value);
+        output.onkeypress = (e) => { if(e.key === 'Enter') output.blur(); };
+        
+        timeSignatureSelect.onchange = (e) => {
+            beatsPerMeasure = parseInt(e.target.value);
+            currentBeat = 0;
+            renderBeats();
+        };
+
+        // Play / Stop
+        playBtn.onclick = function() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            if (!isPlaying) {
+                isPlaying = true;
+                currentBeat = 0;
+                nextNoteTime = audioCtx.currentTime + 0.05;
+                scheduler();
+                this.innerText = "ATURAR";
+                this.classList.add('actiu');
+            } else {
+                isPlaying = false;
+                clearTimeout(timerID);
+                this.innerText = "INICIAR";
+                this.classList.remove('actiu');
+                document.querySelectorAll('.beat-dot').forEach(el => el.classList.remove('active-strong', 'active-weak'));
+            }
+        };
+
+        // Inici
+        renderBeats();
+        updateBPM(120);
+
+    </script>
+</body>
+</html>
